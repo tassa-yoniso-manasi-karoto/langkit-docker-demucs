@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  demucs:
+    image: xserrat/facebook-demucs:latest
+    container_name: langkit-demucs
+    volumes:
+      - ./input:/data/input
+      - ./output:/data/output
+      - ./models:/data/models
+    # Keep container running for exec commands instead of one-shot
+    entrypoint: ["tail", "-f", "/dev/null"]
+    restart: unless-stopped
