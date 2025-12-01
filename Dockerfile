@@ -49,5 +49,6 @@ VOLUME /data/input
 VOLUME /data/output
 VOLUME /data/models
 
-# Keep container running for docker exec
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+# Output init message for dockerutil (delay ensures attach is connected first)
+# Then keep container running for docker exec
+ENTRYPOINT ["/bin/sh", "-c", "sleep 2 && echo 'langkit-demucs' && exec tail -f /dev/null"]
