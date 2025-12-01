@@ -1,12 +1,18 @@
-version: '3.8'
 services:
   demucs:
-    image: xserrat/facebook-demucs:latest
+    build: .
+    image: langkit-demucs:latest
     container_name: langkit-demucs
     volumes:
       - ./input:/data/input
       - ./output:/data/output
       - ./models:/data/models
-    # Keep container running for exec commands instead of one-shot
-    entrypoint: ["tail", "-f", "/dev/null"]
     restart: unless-stopped
+    # GPU support (optional - works without GPU on CPU)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

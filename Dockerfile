@@ -1,38 +1,45 @@
-# Base image supports Nvidia CUDA but does not require it and can also run demucs on the CPU
+# Base image with CUDA 12.6 support (also works on CPU)
 FROM nvidia/cuda:12.6.2-base-ubuntu22.04
 
 USER root
 ENV TORCH_HOME=/data/models
 ENV OMP_NUM_THREADS=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
 
-# Install required tools
-# Notes:
-#  - build-essential and python3-dev are included for platforms that may need to build some Python packages (e.g., arm64)
-#  - torchaudio >= 0.12 now requires ffmpeg on Linux, see https://github.com/facebookresearch/demucs/blob/main/docs/linux.md
+# Install Python 3.12 and required tools
 RUN apt update && apt install -y --no-install-recommends \
-    build-essential \
-    ffmpeg \
-    git \
-    python3 \
-    python3-dev \
+    software-properties-common \
+    && add-apt-repository -y ppa:deadsnakes/ppa \
+    && apt update && apt install -y --no-install-recommends \
+    python3.12 \
+    python3.12-venv \
+    python3.12-dev \
     python3-pip \
+    ffmpeg \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone Demucs (now maintained in the original author's github space)
-RUN git clone --single-branch --branch main https://github.com/adefossez/demucs /lib/demucs
-WORKDIR /lib/demucs
-# Checkout known stable commit on main
-RUN git checkout b9ab48cad45976ba42b2ff17b229c071f0df9390
+# Make python3.12 the default python3
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
 
-# Install dependencies with overrides for known working versions on this base image
-RUN python3 -m pip install -e . "torch<2" "torchaudio<2" "numpy<2" --no-cache-dir
-# Run once to ensure demucs works and trigger the default model download
-RUN python3 -m demucs -d cpu test.mp3 
-# Cleanup output - we just used this to download the model
-RUN rm -r separated
+# Install pip for Python 3.12
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
+
+# Install PyTorch with CUDA 12.4 support (compatible with CUDA 12.6 runtime)
+RUN python3 -m pip install --no-cache-dir \
+    torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+# Install demucs-inference from pinned commit (alpha software, pin for stability)
+RUN python3 -m pip install --no-cache-dir \
+    git+https://github.com/Ryan5453/demucs.git@8654fa473940d3c38255c4e493444d9a75da0be3
+
+# Verify installation
+RUN demucs --help
 
 VOLUME /data/input
 VOLUME /data/output
 VOLUME /data/models
 
-ENTRYPOINT ["/bin/bash", "--login", "-c"]
+# Keep container running for docker exec
+ENTRYPOINT ["tail", "-f", "/dev/null"]
