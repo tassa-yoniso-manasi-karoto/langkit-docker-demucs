@@ -1,0 +1,18 @@
+services:
+  demucs:
+    build: .
+    image: langkit-demucs:latest
+    container_name: langkit-demucs-gpu
+    volumes:
+      - ./input:/data/input
+      - ./output:/data/output
+      - ./models:/data/models
+    restart: unless-stopped
+    # GPU support via NVIDIA Container Toolkit
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
