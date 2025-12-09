@@ -1,7 +1,6 @@
 services:
   demucs:
-    build: .
-    image: langkit-demucs:latest
+    image: ghcr.io/tassa-yoniso-manasi-karoto/langkit-demucs:latest
     container_name: langkit-demucs
     volumes:
       - ./input:/data/input
